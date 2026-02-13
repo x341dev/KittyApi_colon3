@@ -32,6 +32,10 @@ import dev.x341.kittyapi_colon3.screens.ListScreen
 import dev.x341.kittyapi_colon3.screens.SettingsScreen
 import dev.x341.kittyapi_colon3.screens.SplashScreen
 import dev.x341.kittyapi_colon3.ui.theme.KittyApi_colon3Theme
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
+import dev.x341.kittyapi_colon3.viewmodel.CatViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,6 +60,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val sharedViewModel: CatViewModel = viewModel(factory = CatViewModelFactory(context))
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -73,12 +79,12 @@ fun MainScreen() {
             }
         }
     ) { innerPadding ->
-        NavigationGraph(navController = navController, modifier = Modifier.padding(innerPadding))
+        NavigationGraph(navController = navController, viewModel = sharedViewModel, modifier = Modifier.padding(innerPadding))
     }
 }
 
 @Composable
-fun NavigationGraph(navController: NavHostController, modifier: Modifier = Modifier) {
+fun NavigationGraph(navController: NavHostController, viewModel: CatViewModel, modifier: Modifier = Modifier) {
     NavHost(
         navController = navController,
         startDestination = Routes.Splash.route,
@@ -89,19 +95,19 @@ fun NavigationGraph(navController: NavHostController, modifier: Modifier = Modif
         }
 
         composable(Routes.BottomNav.Home.route) {
-            ListScreen(navController)
+            ListScreen(navController, viewModel)
         }
 
         composable(Routes.BottomNav.Favorites.route) {
-            FavouritesScreen(navController)
+            FavouritesScreen(navController, viewModel)
         }
 
         composable(Routes.BottomNav.Settings.route) {
-            SettingsScreen(navController)
+            SettingsScreen(navController, viewModel)
         }
 
         composable(Routes.Details.route) {
-            CatDetailsScreen()
+            CatDetailsScreen(viewModel)
         }
     }
 }

@@ -1,5 +1,6 @@
 package dev.x341.kittyapi_colon3.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,19 +13,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import dev.x341.kittyapi_colon3.Routes
+import dev.x341.kittyapi_colon3.model.CatImage
 import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
-import dev.x341.kittyapi_colon3.viewmodel.CatViewModelFactory
 
 @Composable
-fun FavouritesScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController) {
-    val context = LocalContext.current
-    val viewModel: CatViewModel = viewModel(factory = CatViewModelFactory(context))
-
+fun FavouritesScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController, viewModel: CatViewModel) {
     val favorites = viewModel.favoritesFlow.collectAsState(initial = emptyList()).value
     val showMode = viewModel.showModeFlow.collectAsState(initial = "List").value
 
@@ -47,31 +44,77 @@ fun FavouritesScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostControl
             if (showMode == "Grid") {
                 LazyVerticalGrid(columns = GridCells.Fixed(2), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
                     items(favorites) { favorite ->
-                        FavoriteCard(favorite = favorite, onRemove = {
-                            viewModel.removeFromFavorites(
-                                dev.x341.kittyapi_colon3.model.CatImage(
-                                    id = favorite.id,
-                                    url = favorite.url,
-                                    width = favorite.width,
-                                    height = favorite.height
+                        FavoriteCard(
+                            favorite = favorite,
+                            onRemove = {
+                                viewModel.removeFromFavorites(
+                                    CatImage(
+                                        id = favorite.id,
+                                        url = favorite.url,
+                                        width = favorite.width,
+                                        height = favorite.height
+                                    )
                                 )
-                            )
-                        })
+                            },
+                            onOpenDetails = {
+                                viewModel.selectCat(
+                                    CatImage(
+                                        id = favorite.id,
+                                        url = favorite.url,
+                                        width = favorite.width,
+                                        height = favorite.height,
+                                        breeds = favorite.breedName?.let { name ->
+                                            listOf(
+                                                dev.x341.kittyapi_colon3.model.CatBreed(
+                                                    name = name,
+                                                    description = favorite.breedDescription ?: "",
+                                                    origin = favorite.breedOrigin ?: ""
+                                                )
+                                            )
+                                        }
+                                    )
+                                )
+                                navController.navigate(Routes.Details.route)
+                            }
+                        )
                     }
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
                     items(favorites) { favorite ->
-                        FavoriteCard(favorite = favorite, onRemove = {
-                            viewModel.removeFromFavorites(
-                                dev.x341.kittyapi_colon3.model.CatImage(
-                                    id = favorite.id,
-                                    url = favorite.url,
-                                    width = favorite.width,
-                                    height = favorite.height
+                        FavoriteCard(
+                            favorite = favorite,
+                            onRemove = {
+                                viewModel.removeFromFavorites(
+                                    CatImage(
+                                        id = favorite.id,
+                                        url = favorite.url,
+                                        width = favorite.width,
+                                        height = favorite.height
+                                    )
                                 )
-                            )
-                        })
+                            },
+                            onOpenDetails = {
+                                viewModel.selectCat(
+                                    CatImage(
+                                        id = favorite.id,
+                                        url = favorite.url,
+                                        width = favorite.width,
+                                        height = favorite.height,
+                                        breeds = favorite.breedName?.let { name ->
+                                            listOf(
+                                                dev.x341.kittyapi_colon3.model.CatBreed(
+                                                    name = name,
+                                                    description = favorite.breedDescription ?: "",
+                                                    origin = favorite.breedOrigin ?: ""
+                                                )
+                                            )
+                                        }
+                                    )
+                                )
+                                navController.navigate(Routes.Details.route)
+                            }
+                        )
                     }
                 }
             }
@@ -80,9 +123,15 @@ fun FavouritesScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostControl
 }
 
 @Composable
-private fun FavoriteCard(favorite: dev.x341.kittyapi_colon3.database.FavoriteCat, onRemove: () -> Unit) {
+private fun FavoriteCard(
+    favorite: dev.x341.kittyapi_colon3.database.FavoriteCat,
+    onRemove: () -> Unit,
+    onOpenDetails: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenDetails() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
     ) {
         Column(
@@ -101,7 +150,6 @@ private fun FavoriteCard(favorite: dev.x341.kittyapi_colon3.database.FavoriteCat
             Spacer(modifier = Modifier.height(8.dp))
             if (favorite.breedName != null) {
                 Text("Breed: ${favorite.breedName}", style = MaterialTheme.typography.bodyMedium)
-                favorite.breedDescription?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             } else {
                 Text("Unknown breed", style = MaterialTheme.typography.bodySmall)
             }

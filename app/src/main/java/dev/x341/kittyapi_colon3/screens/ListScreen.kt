@@ -16,26 +16,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import dev.x341.kittyapi_colon3.Routes
 import dev.x341.kittyapi_colon3.database.FavoriteCat
 import dev.x341.kittyapi_colon3.model.CatImage
 import dev.x341.kittyapi_colon3.viewmodel.CatUiState
 import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
-import dev.x341.kittyapi_colon3.viewmodel.CatViewModelFactory
-import dev.x341.kittyapi_colon3.Routes
 
 @Composable
-fun ListScreen(navController: NavHostController) {
-    val context = LocalContext.current
-    val viewModel: CatViewModel = viewModel(factory = CatViewModelFactory(context))
-
+fun ListScreen(navController: NavHostController, viewModel: CatViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val showMode by viewModel.showModeFlow.collectAsState(initial = "List")
     val favorites by viewModel.favoritesFlow.collectAsState(initial = emptyList())
+    val allowUnnamed by viewModel.showUnnamedCatsFlow.collectAsState(initial = false)
 
     Column(
         modifier = Modifier
@@ -83,7 +78,7 @@ fun ListScreen(navController: NavHostController) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
-                    ) { Text("No cats found", style = MaterialTheme.typography.bodyLarge) }
+                    ) { Text(if (allowUnnamed) "No cats found" else "No named cats found", style = MaterialTheme.typography.bodyLarge) }
                 } else {
                     if (showMode == "Grid") {
                         LazyVerticalGrid(columns = GridCells.Fixed(2), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
@@ -95,7 +90,8 @@ fun ListScreen(navController: NavHostController) {
                                     onOpenDetails = {
                                         viewModel.selectCat(cat)
                                         navController.navigate(Routes.Details.route)
-                                    }
+                                    },
+                                    allowUnnamed = allowUnnamed
                                 )
                             }
                         }
@@ -109,7 +105,8 @@ fun ListScreen(navController: NavHostController) {
                                     onOpenDetails = {
                                         viewModel.selectCat(cat)
                                         navController.navigate(Routes.Details.route)
-                                    }
+                                    },
+                                    allowUnnamed = allowUnnamed
                                 )
                             }
                         }
@@ -121,7 +118,7 @@ fun ListScreen(navController: NavHostController) {
 }
 
 @Composable
-private fun CatCard(cat: CatImage, isFavorite: Boolean, onToggleFavorite: () -> Unit, onOpenDetails: () -> Unit) {
+private fun CatCard(cat: CatImage, isFavorite: Boolean, onToggleFavorite: () -> Unit, onOpenDetails: () -> Unit, allowUnnamed: Boolean) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -138,7 +135,11 @@ private fun CatCard(cat: CatImage, isFavorite: Boolean, onToggleFavorite: () -> 
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(cat.breeds?.firstOrNull()?.name ?: "Unknown breed", style = MaterialTheme.typography.titleMedium)
+            Text(
+                cat.breeds?.firstOrNull()?.name?.takeIf { it.isNotBlank() }
+                    ?: if (allowUnnamed) "Unnamed cat" else "Unknown breed",
+                style = MaterialTheme.typography.titleMedium
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),

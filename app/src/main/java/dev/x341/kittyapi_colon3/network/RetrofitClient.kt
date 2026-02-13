@@ -10,7 +10,8 @@ interface CatApiService {
     @GET("images/search")
     suspend fun getRandomCats(
         @Query("api_key") apiKey: String,
-        @Query("limit") limit: Int = 1
+        @Query("limit") limit: Int = 1,
+        @Query("has_breeds") hasBreeds: Int = 0
     ): List<CatImage>
 }
 

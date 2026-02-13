@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 sealed class CatUiState {
     object Loading : CatUiState()
@@ -31,6 +32,7 @@ class CatViewModel(private val context: Context) : ViewModel() {
     val darkModeFlow: Flow<Boolean> = settingsPreferences.darkModeFlow
     val showModeFlow: Flow<String> = settingsPreferences.showModeFlow
     val favoritesFlow: Flow<List<FavoriteCat>> = favoriteCatDao.getAllFavorites()
+    val showUnnamedCatsFlow: Flow<Boolean> = settingsPreferences.showUnnamedCatsFlow
     private val _selectedCat = MutableStateFlow<CatImage?>(null)
     val selectedCat: StateFlow<CatImage?> = _selectedCat
 
@@ -45,11 +47,14 @@ class CatViewModel(private val context: Context) : ViewModel() {
     fun fetchCats(limit: Int = 10) {
         viewModelScope.launch {
             _uiState.value = CatUiState.Loading
-            val result = repository.getRandomCats(limit)
+            val allowUnnamed = settingsPreferences.showUnnamedCatsFlow.first()
+            val hasBreeds = if (allowUnnamed) 0 else 1
+            val result = repository.getRandomCats(limit, hasBreeds)
             result.onSuccess { cats ->
-                _uiState.value = CatUiState.Success(cats)
-                if (_selectedCat.value == null && cats.isNotEmpty()) {
-                    _selectedCat.value = cats.first()
+                val filtered = if (allowUnnamed) cats else cats
+                _uiState.value = CatUiState.Success(filtered.take(limit))
+                if (_selectedCat.value == null && filtered.isNotEmpty()) {
+                    _selectedCat.value = filtered.first()
                 }
             }.onFailure { error ->
                 _uiState.value = CatUiState.Error(error.message ?: "Unknown error")
@@ -103,4 +108,5 @@ class CatViewModel(private val context: Context) : ViewModel() {
     suspend fun setDarkMode(isDark: Boolean) { settingsPreferences.setDarkMode(isDark) }
 
     suspend fun setShowMode(mode: String) { settingsPreferences.setShowMode(mode) }
+    suspend fun setShowUnnamedCats(show: Boolean) { settingsPreferences.setShowUnnamedCats(show) }
 }

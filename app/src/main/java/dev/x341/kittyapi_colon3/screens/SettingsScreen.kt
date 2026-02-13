@@ -15,12 +15,10 @@ import dev.x341.kittyapi_colon3.viewmodel.CatViewModelFactory
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController) {
-    val context = LocalContext.current
-    val viewModel: CatViewModel = viewModel(factory = CatViewModelFactory(context))
-
+fun SettingsScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController, viewModel: CatViewModel) {
     var isDarkMode by remember { mutableStateOf(false) }
     var showMode by remember { mutableStateOf("List") }
+    var showUnnamed by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -32,6 +30,10 @@ fun SettingsScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostControlle
 
     LaunchedEffect(Unit) {
         viewModel.showModeFlow.collect { showMode = it }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.showUnnamedCatsFlow.collect { showUnnamed = it }
     }
 
     Column(
@@ -92,6 +94,23 @@ fun SettingsScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostControlle
                     )
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Show unnamed cats", style = MaterialTheme.typography.titleMedium)
+            Switch(
+                checked = showUnnamed,
+                onCheckedChange = { newValue ->
+                    showUnnamed = newValue
+                    coroutineScope.launch { viewModel.setShowUnnamedCats(newValue) }
+                }
+            )
         }
 
         Spacer(modifier = Modifier.weight(1f))

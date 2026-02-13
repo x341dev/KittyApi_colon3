@@ -6,9 +6,9 @@ import dev.x341.kittyapi_colon3.model.CatImage
 class CatRepository {
     private val api = RetrofitClient.service
 
-    suspend fun getRandomCats(limit: Int): Result<List<CatImage>> {
+    suspend fun getRandomCats(limit: Int, hasBreeds: Int): Result<List<CatImage>> {
         return try {
-            val response = api.getRandomCats(BuildConfig.CAT_API_KEY, limit)
+            val response = api.getRandomCats(BuildConfig.CAT_API_KEY, limit, hasBreeds)
             if (response.isNotEmpty()) {
                 Result.success(response)
             } else {

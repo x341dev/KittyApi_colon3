@@ -12,23 +12,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import dev.x341.kittyapi_colon3.model.CatImage
 import dev.x341.kittyapi_colon3.viewmodel.CatUiState
 import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
-import dev.x341.kittyapi_colon3.viewmodel.CatViewModelFactory
 
 @Composable
-fun CatDetailsScreen() {
-    val context = LocalContext.current
-    val viewModel: CatViewModel = viewModel(factory = CatViewModelFactory(context))
-
+fun CatDetailsScreen(viewModel: CatViewModel) {
     val state by viewModel.uiState.collectAsState()
     val selectedCat by viewModel.selectedCat.collectAsState()
+    val allowUnnamed by viewModel.showUnnamedCatsFlow.collectAsState(initial = false)
     var isFavorite by remember { mutableStateOf(false) }
 
     val currentCat: CatImage? = selectedCat ?: when (state) {
@@ -87,10 +82,9 @@ fun CatDetailsScreen() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = cat.breeds?.firstOrNull()?.name ?: "Mystery Cat",
-                    style = MaterialTheme.typography.headlineMedium
-                )
+                val title = cat.breeds?.firstOrNull()?.name?.takeIf { it.isNotBlank() }
+                    ?: if (allowUnnamed) "Unnamed cat" else "Cat"
+                Text(title, style = MaterialTheme.typography.headlineMedium)
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -103,9 +97,9 @@ fun CatDetailsScreen() {
                         text = cat.breeds[0].description,
                         style = MaterialTheme.typography.bodyMedium
                     )
-                } else {
+                } else if (allowUnnamed) {
                     Text(
-                        text = "Lorem ipsum dolor sit amet...",
+                        text = "No breed info available",
                         style = MaterialTheme.typography.bodyMedium,
                         fontStyle = FontStyle.Italic
                     )

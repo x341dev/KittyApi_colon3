@@ -15,6 +15,7 @@ class SettingsPreferences(private val context: Context) {
     companion object {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val SHOW_MODE = stringPreferencesKey("show_mode")
+        val SHOW_UNNAMED = booleanPreferencesKey("show_unnamed_cats")
     }
 
     val darkModeFlow: Flow<Boolean> = context.dataStore.data
@@ -25,6 +26,11 @@ class SettingsPreferences(private val context: Context) {
     val showModeFlow: Flow<String> = context.dataStore.data
         .map { preferences ->
             preferences[SHOW_MODE] ?: "List"
+        }
+
+    val showUnnamedCatsFlow: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[SHOW_UNNAMED] ?: false
         }
 
     suspend fun setDarkMode(isDark: Boolean) {
@@ -39,6 +45,14 @@ class SettingsPreferences(private val context: Context) {
         context.dataStore.updateData { preferences ->
             preferences.toMutablePreferences().apply {
                 this[SHOW_MODE] = mode
+            }
+        }
+    }
+
+    suspend fun setShowUnnamedCats(show: Boolean) {
+        context.dataStore.updateData { preferences ->
+            preferences.toMutablePreferences().apply {
+                this[SHOW_UNNAMED] = show
             }
         }
     }
