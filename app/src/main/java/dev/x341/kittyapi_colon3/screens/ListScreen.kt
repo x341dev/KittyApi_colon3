@@ -1,5 +1,6 @@
 package dev.x341.kittyapi_colon3.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,15 +25,13 @@ import dev.x341.kittyapi_colon3.database.FavoriteCat
 import dev.x341.kittyapi_colon3.model.CatImage
 import dev.x341.kittyapi_colon3.viewmodel.CatUiState
 import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
+import dev.x341.kittyapi_colon3.viewmodel.CatViewModelFactory
+import dev.x341.kittyapi_colon3.Routes
 
 @Composable
-fun ListScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController) {
+fun ListScreen(navController: NavHostController) {
     val context = LocalContext.current
-    val viewModel: CatViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-            return CatViewModel(context) as T
-        }
-    })
+    val viewModel: CatViewModel = viewModel(factory = CatViewModelFactory(context))
 
     val uiState by viewModel.uiState.collectAsState()
     val showMode by viewModel.showModeFlow.collectAsState(initial = "List")
@@ -89,13 +88,29 @@ fun ListScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController) {
                     if (showMode == "Grid") {
                         LazyVerticalGrid(columns = GridCells.Fixed(2), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
                             items(cats) { cat ->
-                                CatCard(cat = cat, isFavorite = favorites.any { it.id == cat.id }, onToggleFavorite = { toggleFavorite(viewModel, cat, favorites) })
+                                CatCard(
+                                    cat = cat,
+                                    isFavorite = favorites.any { it.id == cat.id },
+                                    onToggleFavorite = { toggleFavorite(viewModel, cat, favorites) },
+                                    onOpenDetails = {
+                                        viewModel.selectCat(cat)
+                                        navController.navigate(Routes.Details.route)
+                                    }
+                                )
                             }
                         }
                     } else {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
                             items(cats) { cat ->
-                                CatCard(cat = cat, isFavorite = favorites.any { it.id == cat.id }, onToggleFavorite = { toggleFavorite(viewModel, cat, favorites) })
+                                CatCard(
+                                    cat = cat,
+                                    isFavorite = favorites.any { it.id == cat.id },
+                                    onToggleFavorite = { toggleFavorite(viewModel, cat, favorites) },
+                                    onOpenDetails = {
+                                        viewModel.selectCat(cat)
+                                        navController.navigate(Routes.Details.route)
+                                    }
+                                )
                             }
                         }
                     }
@@ -106,9 +121,11 @@ fun ListScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController) {
 }
 
 @Composable
-private fun CatCard(cat: CatImage, isFavorite: Boolean, onToggleFavorite: () -> Unit) {
+private fun CatCard(cat: CatImage, isFavorite: Boolean, onToggleFavorite: () -> Unit, onOpenDetails: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenDetails() },
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -122,12 +139,6 @@ private fun CatCard(cat: CatImage, isFavorite: Boolean, onToggleFavorite: () -> 
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(cat.breeds?.firstOrNull()?.name ?: "Unknown breed", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(4.dp))
-            if (!cat.breeds.isNullOrEmpty()) {
-                Text(cat.breeds.first().description, style = MaterialTheme.typography.bodySmall)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("Origin: ${cat.breeds.first().origin}", style = MaterialTheme.typography.bodySmall)
-            }
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),

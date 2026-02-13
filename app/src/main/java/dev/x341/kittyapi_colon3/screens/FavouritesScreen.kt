@@ -18,15 +18,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
+import dev.x341.kittyapi_colon3.viewmodel.CatViewModelFactory
 
 @Composable
 fun FavouritesScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController) {
     val context = LocalContext.current
-    val viewModel: CatViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-            return CatViewModel(context) as T
-        }
-    })
+    val viewModel: CatViewModel = viewModel(factory = CatViewModelFactory(context))
 
     val favorites = viewModel.favoritesFlow.collectAsState(initial = emptyList()).value
     val showMode = viewModel.showModeFlow.collectAsState(initial = "List").value

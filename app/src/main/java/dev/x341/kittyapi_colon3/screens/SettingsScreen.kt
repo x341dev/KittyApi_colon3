@@ -11,16 +11,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
+import dev.x341.kittyapi_colon3.viewmodel.CatViewModelFactory
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController) {
     val context = LocalContext.current
-    val viewModel: CatViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-            return CatViewModel(context) as T
-        }
-    })
+    val viewModel: CatViewModel = viewModel(factory = CatViewModelFactory(context))
 
     var isDarkMode by remember { mutableStateOf(false) }
     var showMode by remember { mutableStateOf("List") }
@@ -30,11 +27,11 @@ fun SettingsScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostControlle
 
     // Load settings from DataStore
     LaunchedEffect(Unit) {
-        viewModel.darkModeFlow?.collect { isDarkMode = it }
+        viewModel.darkModeFlow.collect { isDarkMode = it }
     }
 
     LaunchedEffect(Unit) {
-        viewModel.showModeFlow?.collect { showMode = it }
+        viewModel.showModeFlow.collect { showMode = it }
     }
 
     Column(

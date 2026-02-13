@@ -31,9 +31,15 @@ class CatViewModel(private val context: Context) : ViewModel() {
     val darkModeFlow: Flow<Boolean> = settingsPreferences.darkModeFlow
     val showModeFlow: Flow<String> = settingsPreferences.showModeFlow
     val favoritesFlow: Flow<List<FavoriteCat>> = favoriteCatDao.getAllFavorites()
+    private val _selectedCat = MutableStateFlow<CatImage?>(null)
+    val selectedCat: StateFlow<CatImage?> = _selectedCat
 
     init {
         fetchCats()
+    }
+
+    fun selectCat(cat: CatImage) {
+        _selectedCat.value = cat
     }
 
     fun fetchCats(limit: Int = 10) {
@@ -42,6 +48,9 @@ class CatViewModel(private val context: Context) : ViewModel() {
             val result = repository.getRandomCats(limit)
             result.onSuccess { cats ->
                 _uiState.value = CatUiState.Success(cats)
+                if (_selectedCat.value == null && cats.isNotEmpty()) {
+                    _selectedCat.value = cats.first()
+                }
             }.onFailure { error ->
                 _uiState.value = CatUiState.Error(error.message ?: "Unknown error")
             }
@@ -79,6 +88,9 @@ class CatViewModel(private val context: Context) : ViewModel() {
                     breedOrigin = catImage.breeds?.firstOrNull()?.origin
                 )
             )
+            if (_selectedCat.value?.id == catImage.id) {
+                _selectedCat.value = null
+            }
         }
     }
 

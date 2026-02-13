@@ -20,25 +20,23 @@ import coil.compose.AsyncImage
 import dev.x341.kittyapi_colon3.model.CatImage
 import dev.x341.kittyapi_colon3.viewmodel.CatUiState
 import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
+import dev.x341.kittyapi_colon3.viewmodel.CatViewModelFactory
 
 @Composable
 fun CatDetailsScreen() {
     val context = LocalContext.current
-    val viewModel: CatViewModel = viewModel(factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-            return CatViewModel(context) as T
-        }
-    })
+    val viewModel: CatViewModel = viewModel(factory = CatViewModelFactory(context))
 
     val state by viewModel.uiState.collectAsState()
+    val selectedCat by viewModel.selectedCat.collectAsState()
     var isFavorite by remember { mutableStateOf(false) }
 
-    val currentCat: CatImage? = when (state) {
+    val currentCat: CatImage? = selectedCat ?: when (state) {
         is CatUiState.Success -> (state as CatUiState.Success).cats.firstOrNull()
         else -> null
     }
 
-    LaunchedEffect(state) {
+    LaunchedEffect(currentCat) {
         currentCat?.let { cat ->
             isFavorite = viewModel.isFavorite(cat.id)
         }
