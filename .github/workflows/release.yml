@@ -1,0 +1,116 @@
+name: Unified CI/CD & Changelog
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-unreleased:
+    name: Update Unreleased Changelog
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'chore(release)')"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Unreleased Changelog
+        uses: orhun/git-cliff-action@v3
+        with:
+          config: cliff.toml
+          args: --unreleased --output CHANGELOG.md
+
+      - name: Commit and Push Unreleased
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs: update unreleased changes [skip ci]" || echo "No changes to commit"
+          git push
+
+  build-and-pack:
+    name: Build & Version
+    needs: update-unreleased
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Calculate Semantic Version
+        id: version
+        uses: PaulHatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          version_format: "${major}.${minor}.${patch}"
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build Android Release
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean assembleRelease
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 5
+
+  approve-and-release:
+    name: Approve & Publish
+    needs: build-and-pack
+    runs-on: ubuntu-latest
+    environment:
+      name: Release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Update Changelog with Tag
+        uses: orhun/git-cliff-action@v3
+        with:
+          config: cliff.toml
+          args: --tag v${{ needs.build-and-pack.outputs.version }} --output CHANGELOG.md
+
+      - name: Commit and Push Release Changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): prepare for v${{ needs.build-and-pack.outputs.version }} [skip ci]" || echo "No changes"
+          git push
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release
+          path: ./artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build-and-pack.outputs.version }}
+          name: Release v${{ needs.build-and-pack.outputs.version }}
+          body_path: CHANGELOG.md
+          files: ./artifacts/*.apk
