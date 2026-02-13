@@ -1,4 +1,4 @@
-package dev.x341.kittyapi_colon3.network
+package dev.x341.kittyapi_colon3.networkBu
 
 import dev.x341.kittyapi_colon3.model.CatImage
 import retrofit2.Retrofit

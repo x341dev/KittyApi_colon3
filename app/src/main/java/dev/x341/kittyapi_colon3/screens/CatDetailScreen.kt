@@ -1,7 +1,9 @@
 package dev.x341.kittyapi_colon3.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Favorite
@@ -12,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import dev.x341.kittyapi_colon3.model.CatImage
@@ -21,6 +25,9 @@ import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
 
 @Composable
 fun CatDetailsScreen(viewModel: CatViewModel) {
+    val configuration = LocalConfiguration.current
+    val isCompactHeight = configuration.screenHeightDp < 600
+    val scrollState = rememberScrollState()
     val state by viewModel.uiState.collectAsState()
     val selectedCat by viewModel.selectedCat.collectAsState()
     val allowUnnamed by viewModel.showUnnamedCatsFlow.collectAsState(initial = false)
@@ -40,6 +47,7 @@ fun CatDetailsScreen(viewModel: CatViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -52,13 +60,15 @@ fun CatDetailsScreen(viewModel: CatViewModel) {
             is CatUiState.Success -> {
                 val cat = currentCat ?: return@Column
 
+                val imageHeight = if (isCompactHeight) 240.dp else 320.dp
+
                 Box(modifier = Modifier.fillMaxWidth()) {
                     AsyncImage(
                         model = cat.url,
                         contentDescription = "Cat",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(300.dp)
+                            .height(imageHeight)
                             .clip(RoundedCornerShape(16.dp)),
                         contentScale = ContentScale.Crop
                     )
@@ -84,7 +94,7 @@ fun CatDetailsScreen(viewModel: CatViewModel) {
 
                 val title = cat.breeds?.firstOrNull()?.name?.takeIf { it.isNotBlank() }
                     ?: if (allowUnnamed) "Unnamed cat" else "Cat"
-                Text(title, style = MaterialTheme.typography.headlineMedium)
+                Text(title, style = MaterialTheme.typography.headlineMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
 
                 Spacer(modifier = Modifier.height(8.dp))
 

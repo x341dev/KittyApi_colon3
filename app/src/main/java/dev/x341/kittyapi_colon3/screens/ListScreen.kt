@@ -16,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -27,6 +29,16 @@ import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
 
 @Composable
 fun ListScreen(navController: NavHostController, viewModel: CatViewModel) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp
+    val isCompactHeight = configuration.screenHeightDp < 600
+    val gridColumns = when {
+        screenWidth >= 1200 -> 4
+        screenWidth >= 900 -> 3
+        screenWidth >= 600 -> 2
+        else -> 2
+    }
+
     val uiState by viewModel.uiState.collectAsState()
     val showMode by viewModel.showModeFlow.collectAsState(initial = "List")
     val favorites by viewModel.favoritesFlow.collectAsState(initial = emptyList())
@@ -35,22 +47,27 @@ fun ListScreen(navController: NavHostController, viewModel: CatViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(if (isCompactHeight) 12.dp else 16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Random Cats", style = MaterialTheme.typography.headlineMedium)
-            Button(onClick = { viewModel.refreshCats() }) {
+            Text(
+                "Random Cats",
+                style = if (isCompactHeight) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Button(onClick = { viewModel.refreshCats() }, contentPadding = PaddingValues(horizontal = 12.dp, vertical = if (isCompactHeight) 6.dp else 8.dp)) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Reload")
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(if (isCompactHeight) 12.dp else 16.dp))
 
         when (uiState) {
             is CatUiState.Loading -> Box(
@@ -81,7 +98,7 @@ fun ListScreen(navController: NavHostController, viewModel: CatViewModel) {
                     ) { Text(if (allowUnnamed) "No cats found" else "No named cats found", style = MaterialTheme.typography.bodyLarge) }
                 } else {
                     if (showMode == "Grid") {
-                        LazyVerticalGrid(columns = GridCells.Fixed(2), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
+                        LazyVerticalGrid(columns = GridCells.Fixed(gridColumns.coerceAtLeast(1)), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
                             items(cats) { cat ->
                                 CatCard(
                                     cat = cat,
@@ -119,6 +136,9 @@ fun ListScreen(navController: NavHostController, viewModel: CatViewModel) {
 
 @Composable
 private fun CatCard(cat: CatImage, isFavorite: Boolean, onToggleFavorite: () -> Unit, onOpenDetails: () -> Unit, allowUnnamed: Boolean) {
+    val configuration = LocalConfiguration.current
+    val isCompactHeight = configuration.screenHeightDp < 600
+    val imageHeight = if (isCompactHeight) 160.dp else 200.dp
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -131,21 +151,23 @@ private fun CatCard(cat: CatImage, isFavorite: Boolean, onToggleFavorite: () -> 
                 contentDescription = "Cat",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp),
+                    .height(imageHeight),
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 cat.breeds?.firstOrNull()?.name?.takeIf { it.isNotBlank() }
                     ?: if (allowUnnamed) "Unnamed cat" else "Unknown breed",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                FilledTonalButton(onClick = onToggleFavorite) {
+                FilledTonalButton(onClick = onToggleFavorite, contentPadding = PaddingValues(horizontal = 10.dp, vertical = if (isCompactHeight) 6.dp else 8.dp)) {
                     Icon(if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(if (isFavorite) "Remove" else "Favorite")

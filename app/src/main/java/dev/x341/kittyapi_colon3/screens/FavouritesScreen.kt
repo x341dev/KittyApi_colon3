@@ -13,6 +13,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -22,6 +23,14 @@ import dev.x341.kittyapi_colon3.viewmodel.CatViewModel
 
 @Composable
 fun FavouritesScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostController, viewModel: CatViewModel) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp
+    val gridColumns = when {
+        screenWidth >= 1200 -> 4
+        screenWidth >= 900 -> 3
+        screenWidth >= 600 -> 2
+        else -> 2
+    }
     val favorites = viewModel.favoritesFlow.collectAsState(initial = emptyList()).value
     val showMode = viewModel.showModeFlow.collectAsState(initial = "List").value
 
@@ -42,7 +51,7 @@ fun FavouritesScreen(@Suppress("UNUSED_PARAMETER") navController: NavHostControl
             }
         } else {
             if (showMode == "Grid") {
-                LazyVerticalGrid(columns = GridCells.Fixed(2), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
+                LazyVerticalGrid(columns = GridCells.Fixed(gridColumns.coerceAtLeast(1)), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
                     items(favorites) { favorite ->
                         FavoriteCard(
                             favorite = favorite,
