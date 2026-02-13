@@ -1,0 +1,16 @@
+## [unreleased]
+
+### 🚀 Features
+
+- Cat :3
+- Add the detail screen
+- Enhance cat details and favorites screens with unnamed cat support
+
+### 📚 Documentation
+
+- Make README.md
+
+### ⚙️ Miscellaneous Tasks
+
+- Add CI/CD workflow
+- Fix changelog generator
